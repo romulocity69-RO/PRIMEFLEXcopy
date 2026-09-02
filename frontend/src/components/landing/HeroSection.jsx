@@ -110,7 +110,7 @@ const HeroSection = () => {
 
         {/* Right: phone */}
         <div className="flex justify-center lg:justify-end">
-          <div className="animate-float">
+          <div>
             <PrimeFlexPhone />
           </div>
         </div>

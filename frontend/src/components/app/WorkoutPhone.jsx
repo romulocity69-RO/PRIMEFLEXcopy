@@ -10,6 +10,7 @@ import MensagensTab from "./tabs/MensagensTab";
 import PerfilTab from "./tabs/PerfilTab";
 import ExerciseModal from "./ExerciseModal";
 import FlexModal from "./FlexModal";
+import StartWorkoutModal from "./StartWorkoutModal";
 
 const StatusBar = () => (
   <div className="flex items-center justify-between px-5 pt-3 text-[11px] font-medium text-white/80">
@@ -36,6 +37,7 @@ const WorkoutPhone = ({ planId, plan }) => {
   const [selectedEx, setSelectedEx] = useState(null);
   const [exOpen, setExOpen] = useState(false);
   const [flexOpen, setFlexOpen] = useState(false);
+  const [startOpen, setStartOpen] = useState(false);
   const [addIdx, setAddIdx] = useState(0);
 
   const toggle = (id) => setDone((p) => ({ ...p, [id]: !p[id] }));
@@ -52,7 +54,7 @@ const WorkoutPhone = ({ planId, plan }) => {
     toast({ title: `Exercício adicionado: ${next.name}` });
   };
 
-  const startWorkout = () => toast({ title: "Treino iniciado! Bora treinar 💪" });
+  const startWorkout = () => setStartOpen(true);
 
   const titleMap = {
     Início: "Início",
@@ -125,6 +127,7 @@ const WorkoutPhone = ({ planId, plan }) => {
 
       <ExerciseModal exercise={selectedEx} open={exOpen} onOpenChange={setExOpen} />
       <FlexModal open={flexOpen} onOpenChange={setFlexOpen} />
+      <StartWorkoutModal open={startOpen} onOpenChange={setStartOpen} plan={plan} exercises={exercises} />
     </div>
   );
 };
