@@ -5,6 +5,7 @@ import WorkoutPhone from "../components/app/WorkoutPhone";
 import SidePanels3D from "../components/app/SidePanels3D";
 import BarChart from "../components/app/BarChart";
 import { appPlans } from "../mock";
+import { useToast } from "../hooks/use-toast";
 
 const planTabs = [
   { id: "start", label: "START", icon: "Apple" },
@@ -31,6 +32,7 @@ const ReceivePanel = ({ plan }) => (
 const AppDashboard = () => {
   const { plan: rawPlan } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const planId = ["start", "2.0", "3d"].includes(rawPlan) ? rawPlan : "start";
   const plan = appPlans[planId];
 
@@ -100,7 +102,10 @@ const AppDashboard = () => {
                 <p className="text-[11px] font-bold text-white/85">{plan.chartTitle}</p>
                 <p className="mb-3 text-[9px] text-white/45">{plan.chartSub}</p>
                 <BarChart data={plan.chart} />
-                <button className="mt-2 flex items-center gap-1 text-[9px] font-semibold text-prime-pink">
+                <button
+                  onClick={() => toast({ title: "Histórico completo (demonstração)" })}
+                  className="mt-2 flex items-center gap-1 text-[9px] font-semibold text-prime-pink"
+                >
                   Ver histórico completo <Icon name="ChevronRight" size={11} />
                 </button>
               </div>

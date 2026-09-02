@@ -16,12 +16,22 @@ const DrikaSidebar = () => (
       {drika.motto}
     </p>
     <div className="mt-1 flex items-center gap-3">
-      <span className="flex h-8 w-8 items-center justify-center rounded-full border border-prime-pink/40 text-prime-pink transition-colors hover:bg-prime-pink/10">
+      <a
+        href="https://instagram.com/drikahostt"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex h-8 w-8 items-center justify-center rounded-full border border-prime-pink/40 text-prime-pink transition-colors hover:bg-prime-pink/10"
+      >
         <Icon name="Instagram" size={16} />
-      </span>
-      <span className="flex h-8 w-8 items-center justify-center rounded-full border border-prime-pink/40 text-prime-pink transition-colors hover:bg-prime-pink/10">
+      </a>
+      <a
+        href="https://tiktok.com/@drikahostt"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex h-8 w-8 items-center justify-center rounded-full border border-prime-pink/40 text-prime-pink transition-colors hover:bg-prime-pink/10"
+      >
         <Icon name="Music2" size={16} />
-      </span>
+      </a>
       <span className="text-[11px] font-medium text-white/55">
         {drika.instagram}
       </span>

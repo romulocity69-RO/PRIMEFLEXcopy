@@ -35,10 +35,10 @@ const LandingPage = () => {
       <div className="reveal">
         <PricingPlans />
       </div>
-      <div className="reveal">
+      <div className="reveal" id="garantia">
         <GuaranteeSection />
       </div>
-      <div className="reveal">
+      <div className="reveal" id="features">
         <FeaturesBar />
       </div>
 

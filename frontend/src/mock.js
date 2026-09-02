@@ -249,10 +249,10 @@ export const bottomNav = [
 ];
 
 const baseExercises = [
-  { id: 1, name: "Hip Thrust", tag: "Exercício principal", img: EXERCISE_IMGS.hipthrust, sets: "4 séries", reps: "8–10 reps", rest: "Descanso: 90s", suggested: "40 kg", prev: "40 kg", current: "45 kg" },
-  { id: 2, name: "Agachamento Livre", img: EXERCISE_IMGS.squat, sets: "3 séries", reps: "12–15 reps", rest: "Descanso: 90s", suggested: "30 kg", prev: "30 kg", current: "32,5 kg" },
-  { id: 3, name: "Búlgaro", img: EXERCISE_IMGS.bulgarian, sets: "3 séries", reps: "10–12 reps cada perna", rest: "Descanso: 60s", suggested: "12 kg", prev: "12 kg", current: "14 kg" },
-  { id: 4, name: "Cadeira Abdutora", img: EXERCISE_IMGS.abductor, sets: "3 séries", reps: "15–20 reps", rest: "Descanso: 45s", suggested: "25 kg", prev: "25 kg", current: "27,5 kg" },
+  { id: 1, name: "Hip Thrust", tag: "Exercício principal", img: EXERCISE_IMGS.hipthrust, sets: "4 séries", reps: "8–10 reps", rest: "Descanso: 90s", suggested: "40 kg", prev: "40 kg", current: "45 kg", videoId: "xDmFkJxPzeM", videoQuery: "hip thrust como fazer execução", tips: "Apoie a parte alta das costas no banco, empurre pelos calcanhares e contraia o glúteo no topo." },
+  { id: 2, name: "Agachamento Livre", img: EXERCISE_IMGS.squat, sets: "3 séries", reps: "12–15 reps", rest: "Descanso: 90s", suggested: "30 kg", prev: "30 kg", current: "32,5 kg", videoId: "pTvG8lGEDXY", videoQuery: "agachamento livre execução correta", tips: "Mantenha o tronco firme, joelhos alinhados aos pés e desça até a coxa ficar paralela ao chão." },
+  { id: 3, name: "Búlgaro", img: EXERCISE_IMGS.bulgarian, sets: "3 séries", reps: "10–12 reps cada perna", rest: "Descanso: 60s", suggested: "12 kg", prev: "12 kg", current: "14 kg", videoId: "T-WTsDMpWx4", videoQuery: "agachamento búlgaro execução", tips: "Pé de trás apoiado no banco, desça controlando o movimento e mantenha o peso na perna da frente." },
+  { id: 4, name: "Cadeira Abdutora", img: EXERCISE_IMGS.abductor, sets: "3 séries", reps: "15–20 reps", rest: "Descanso: 45s", suggested: "25 kg", prev: "25 kg", current: "27,5 kg", videoId: "7HylKT7G-EA", videoQuery: "cadeira abdutora glúteo execução", tips: "Empurre com a lateral das coxas, abra devagar e segure 1s na maior amplitude." },
 ];
 
 export const appPlans = {
@@ -365,4 +365,159 @@ export const appPlans = {
       ],
     },
   },
+};
+
+
+// ============================================================
+// Interactive extras (tabs, chat, profile, 3D panels, flex)
+// ============================================================
+
+export const inicioSummary = {
+  greeting: "Olá, Drika!",
+  sub: "Pronta para o treino de hoje?",
+  todayTitle: "Treino de hoje",
+  todayName: "Treino A · Glúteos + Quadríceps",
+  todayMeta: "60 min · 4 exercícios",
+  stats: [
+    { icon: "Flame", label: "Sequência", value: "7 dias" },
+    { icon: "CheckCircle2", label: "Concluídos", value: "18/20" },
+    { icon: "TrendingUp", label: "Evolução", value: "+18%" },
+  ],
+  weekPlan: [
+    { day: "SEG", name: "Glúteos + Quadríceps", done: false, today: true },
+    { day: "TER", name: "Descanso ativo", done: false },
+    { day: "QUA", name: "Posterior + Glúteos", done: false },
+    { day: "QUI", name: "Descanso", done: false },
+    { day: "SEX", name: "Inferiores completo", done: false },
+  ],
+};
+
+export const messagesData = {
+  personalName: "Juliana",
+  role: "Sua personal Prime",
+  messages: [
+    { from: "personal", text: "Oi Drika! Como você se sentiu no treino de ontem? 💪", time: "08:30" },
+    { from: "me", text: "Oi Ju! Me senti super bem, consegui subir a carga no hip thrust!", time: "09:12" },
+    { from: "personal", text: "Que máximo! Vi aqui que você foi pra 45kg. Bora manter a técnica firme.", time: "09:15" },
+    { from: "personal", text: "Foco de hoje: amplitude e controle na descida. Qualquer dúvida me chama 😉", time: "09:16" },
+    { from: "me", text: "Combinado! Vou treinar agora à tarde.", time: "09:20" },
+  ],
+};
+
+export const profileData = {
+  name: "Drika Host",
+  email: "drika@gluteoprime.com",
+  planLabel: "Plano ativo",
+  memberSince: "Membro desde Jan/2025",
+  stats: [
+    { label: "Treinos", value: "126" },
+    { label: "Sequência", value: "7 dias" },
+    { label: "Nível", value: "Intermediário" },
+  ],
+  menu: [
+    { icon: "User", label: "Dados pessoais" },
+    { icon: "CreditCard", label: "Meu plano e pagamento" },
+    { icon: "Bell", label: "Notificações" },
+    { icon: "Sparkles", label: "Prime Flex" },
+    { icon: "Settings", label: "Configurações" },
+    { icon: "HelpCircle", label: "Ajuda e suporte" },
+  ],
+};
+
+// Content shown in modal when a 3D panel item is clicked
+export const panelContents = {
+  "Avaliações": {
+    icon: "ClipboardList",
+    desc: "Acompanhe suas avaliações físicas periódicas com a equipe Prime.",
+    rows: [
+      { label: "Última avaliação", value: "20/05/2025" },
+      { label: "Próxima avaliação", value: "27/05/2025" },
+      { label: "% de gordura", value: "22,4% (-1,8%)" },
+      { label: "Massa magra", value: "42,1 kg (+0,9 kg)" },
+    ],
+  },
+  "Plano alimentar": {
+    icon: "UtensilsCrossed",
+    desc: "Seu plano alimentar individualizado, ajustado ao seu objetivo.",
+    rows: [
+      { label: "Objetivo", value: "Hipertrofia + definição" },
+      { label: "Calorias/dia", value: "1.850 kcal" },
+      { label: "Proteínas", value: "130 g" },
+      { label: "Refeições", value: "5 por dia" },
+    ],
+  },
+  "Ajustes": {
+    icon: "Sliders",
+    desc: "Ajustes recentes que sua personal fez no seu treino.",
+    rows: [
+      { label: "Hip Thrust", value: "40kg → 45kg" },
+      { label: "Agachamento", value: "+1 série" },
+      { label: "Descanso", value: "Reduzido p/ 60s" },
+    ],
+  },
+  "Histórico de cargas": {
+    icon: "LineChart",
+    desc: "Evolução das suas cargas nos últimos meses.",
+    rows: [
+      { label: "Jan", value: "20 kg" },
+      { label: "Mar", value: "30 kg" },
+      { label: "Mai", value: "40 kg" },
+      { label: "Jun", value: "45 kg" },
+    ],
+  },
+  "Gráficos de evolução": {
+    icon: "TrendingUp",
+    desc: "Seus principais indicadores de evolução no período.",
+    rows: [
+      { label: "Volume total", value: "+18%" },
+      { label: "Carga média", value: "+12%" },
+      { label: "Frequência", value: "100%" },
+    ],
+  },
+  "Fotos progresso": {
+    icon: "Camera",
+    desc: "Registre suas fotos de progresso a cada 30 dias para comparar a evolução.",
+    rows: [
+      { label: "Última foto", value: "20/05/2025" },
+      { label: "Comparativo", value: "30 / 60 / 90 dias" },
+    ],
+  },
+  "Feedback da personal": {
+    icon: "MessageSquare",
+    desc: "Feedback mais recente da Juliana sobre seus treinos.",
+    rows: [
+      { label: "Técnica", value: "Excelente" },
+      { label: "Consistência", value: "100%" },
+      { label: "Observação", value: "Manter amplitude" },
+    ],
+  },
+  "Anotações": {
+    icon: "StickyNote",
+    desc: "Suas anotações pessoais sobre treinos e sensações.",
+    rows: [
+      { label: "20/05", value: "Senti bem o glúteo" },
+      { label: "18/05", value: "Aumentar carga no búlgaro" },
+    ],
+  },
+  "Prime Flex": {
+    icon: "Sparkles",
+    desc: "Você tem +10 dias Flex disponíveis. Use quando precisar, sem culpa.",
+    rows: [
+      { label: "Dias disponíveis", value: "+10 dias" },
+      { label: "Plano", value: "Trimestral" },
+      { label: "Status", value: "Ativo" },
+    ],
+  },
+};
+
+export const flexPause = {
+  title: "Prime Flex",
+  subtitle: "Pause seu treino sem culpa",
+  available: "+10 dias",
+  options: [
+    { days: "1 dia", note: "Uma pausa rápida" },
+    { days: "3 dias", note: "Um respiro maior" },
+    { days: "7 dias", note: "Uma semana completa" },
+  ],
+  note: "Seu plano será estendido automaticamente pela mesma quantidade de dias pausados.",
 };

@@ -1,5 +1,7 @@
+import { useState } from "react";
 import Icon from "../Icon";
 import { phoneFlex } from "../../mock";
+import FlexModal from "../app/FlexModal";
 
 const PhoneFrame = ({ children }) => (
   <div className="relative w-full max-w-[320px] rounded-[2.4rem] border border-white/10 bg-black p-2.5 shadow-[0_25px_60px_-15px_rgba(236,72,153,0.35)]">
@@ -9,6 +11,7 @@ const PhoneFrame = ({ children }) => (
 
 const PrimeFlexPhone = () => {
   const f = phoneFlex;
+  const [flexOpen, setFlexOpen] = useState(false);
   return (
     <PhoneFrame>
       {/* status bar */}
@@ -40,7 +43,10 @@ const PrimeFlexPhone = () => {
           </p>
           <p className="text-[11px] font-semibold text-white/80">{f.plan}</p>
           <p className="text-[9px] text-white/45">{f.planNote}</p>
-          <button className="mt-3 w-full rounded-xl bg-gradient-to-r from-prime-pink to-prime-pinkdeep py-2.5 text-xs font-bold tracking-wide text-white transition-transform hover:scale-[1.02]">
+          <button
+            onClick={() => setFlexOpen(true)}
+            className="mt-3 w-full rounded-xl bg-gradient-to-r from-prime-pink to-prime-pinkdeep py-2.5 text-xs font-bold tracking-wide text-white transition-transform hover:scale-[1.02]"
+          >
             {f.button}
           </button>
         </div>
@@ -106,6 +112,7 @@ const PrimeFlexPhone = () => {
           {f.footerNote}
         </p>
       </div>
+      <FlexModal open={flexOpen} onOpenChange={setFlexOpen} />
     </PhoneFrame>
   );
 };

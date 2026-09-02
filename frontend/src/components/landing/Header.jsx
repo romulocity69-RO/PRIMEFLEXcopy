@@ -3,8 +3,14 @@ import Icon from "../Icon";
 import PeachLogo from "../PeachLogo";
 import { brand, navItems } from "../../mock";
 
+const scrollTargets = ["planos", "planos", "garantia", "features", "features"];
+
 const Header = () => {
   const navigate = useNavigate();
+  const goToSection = (i) => {
+    const el = document.getElementById(scrollTargets[i]);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   return (
     <header className="relative z-30 border-b border-white/5 bg-prime-dark/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-4 px-4 py-4 md:px-8">
@@ -30,8 +36,9 @@ const Header = () => {
         {/* Nav */}
         <nav className="hidden items-center gap-7 lg:flex">
           {navItems.map((item, i) => (
-            <div
+            <button
               key={i}
+              onClick={() => goToSection(i)}
               className="group flex cursor-pointer flex-col items-center gap-1.5"
             >
               <Icon
@@ -48,7 +55,7 @@ const Header = () => {
                   {item.sub}
                 </p>
               </div>
-            </div>
+            </button>
           ))}
         </nav>
 

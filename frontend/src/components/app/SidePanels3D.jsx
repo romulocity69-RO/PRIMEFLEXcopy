@@ -1,5 +1,7 @@
+import { useState } from "react";
 import Icon from "../Icon";
 import BarChart, { LineChartMini } from "./BarChart";
+import PanelModal from "./PanelModal";
 
 const Panel = ({ title, sub, children }) => (
   <div className="rounded-2xl border border-white/8 bg-[#111013] p-4">
@@ -10,6 +12,12 @@ const Panel = ({ title, sub, children }) => (
 );
 
 const SidePanels3D = ({ data }) => {
+  const [panel, setPanel] = useState(null);
+  const [open, setOpen] = useState(false);
+  const openPanel = (label) => {
+    setPanel(label);
+    setOpen(true);
+  };
   return (
     <div className="grid w-full max-w-[360px] grid-cols-1 gap-3">
       {/* follow grid */}
@@ -18,6 +26,7 @@ const SidePanels3D = ({ data }) => {
           {data.followItems.map((it, i) => (
             <button
               key={i}
+              onClick={() => openPanel(it.label)}
               className="flex flex-col items-center gap-1.5 rounded-xl border border-white/6 bg-[#161519] p-2.5 transition-colors hover:border-prime-pink/40"
             >
               <Icon name={it.icon} size={18} className="text-prime-pink" strokeWidth={1.6} />
@@ -47,7 +56,10 @@ const SidePanels3D = ({ data }) => {
               </div>
             </div>
           ))}
-          <button className="flex items-center gap-1 pt-1 text-[9px] font-semibold text-prime-pink">
+          <button
+            onClick={() => openPanel("Avaliações")}
+            className="flex items-center gap-1 pt-1 text-[9px] font-semibold text-prime-pink"
+          >
             Ver todas as medidas <Icon name="ChevronRight" size={11} />
           </button>
         </div>
@@ -71,10 +83,15 @@ const SidePanels3D = ({ data }) => {
       {/* carga chart */}
       <Panel title={data.chartTitle} sub={data.chartSub}>
         <LineChartMini data={data.chart} />
-        <button className="mt-4 flex items-center gap-1 text-[9px] font-semibold text-prime-pink">
+        <button
+          onClick={() => openPanel("Histórico de cargas")}
+          className="mt-4 flex items-center gap-1 text-[9px] font-semibold text-prime-pink"
+        >
           Ver gráfico completo <Icon name="ChevronRight" size={11} />
         </button>
       </Panel>
+
+      <PanelModal label={panel} open={open} onOpenChange={setOpen} />
     </div>
   );
 };
