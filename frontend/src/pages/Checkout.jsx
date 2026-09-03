@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
 import Icon from "../components/Icon";
 import PeachLogo from "../components/PeachLogo";
 import { plans } from "../mock";
 import { useToast } from "../hooks/use-toast";
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const PERIOD_KEYS = ["mensal", "trimestral", "semestral", "anual"];
 
 const Checkout = () => {
   const { plan: planId } = useParams();
@@ -14,20 +18,38 @@ const Checkout = () => {
   const [mode, setMode] = useState("signup");
   const [selectedIdx, setSelectedIdx] = useState(1);
   const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [loading, setLoading] = useState(false);
 
   const selected = plan.pricing[selectedIdx];
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.email || !form.password || (mode === "signup" && !form.name)) {
-      toast({ title: "Preencha todos os campos para continuar." });
+    if (!form.email || (mode === "signup" && !form.name)) {
+      toast({ title: "Preencha nome e e-mail para continuar." });
       return;
     }
-    toast({
-      title: "Assinatura confirmada! (demonstração)",
-      description: `Plano ${plan.name} · ${selected.period} — bem-vinda ao Glúteo Prime!`,
-    });
-    setTimeout(() => navigate(`/app/${plan.id}`), 1200);
+    setLoading(true);
+    try {
+      const { data } = await axios.post(`${BACKEND_URL}/api/payments/checkout`, {
+        plan_id: plan.id,
+        period: PERIOD_KEYS[selectedIdx],
+        email: form.email,
+        name: form.name,
+        origin: window.location.origin,
+      });
+      if (data.checkout_url) {
+        // Redirect to Mercado Pago hosted checkout (card, Pix, boleto)
+        window.location.href = data.checkout_url;
+      } else {
+        throw new Error("no checkout url");
+      }
+    } catch (err) {
+      setLoading(false);
+      toast({
+        title: "Não foi possível iniciar o pagamento",
+        description: "Tente novamente em instantes.",
+      });
+    }
   };
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -82,17 +104,30 @@ const Checkout = () => {
               <Field icon="User" placeholder="Seu nome" value={form.name} onChange={set("name")} />
             )}
             <Field icon="Mail" type="email" placeholder="Seu e-mail" value={form.email} onChange={set("email")} />
-            <Field icon="Lock" type="password" placeholder="Sua senha" value={form.password} onChange={set("password")} />
 
             <button
               type="submit"
-              className="mt-2 w-full rounded-xl bg-gradient-to-r from-prime-pink to-prime-pinkdeep py-3.5 text-sm font-extrabold text-white transition-transform hover:scale-[1.02]"
+              disabled={loading}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-prime-pink to-prime-pinkdeep py-3.5 text-sm font-extrabold text-white transition-transform hover:scale-[1.02] disabled:opacity-60"
             >
-              Finalizar assinatura
+              {loading ? (
+                <>
+                  <Icon name="Loader2" size={16} className="animate-spin" /> Redirecionando...
+                </>
+              ) : (
+                <>
+                  <Icon name="Lock" size={15} /> Ir para o pagamento
+                </>
+              )}
             </button>
+            <div className="flex items-center justify-center gap-2 pt-1">
+              <span className="rounded bg-white/5 px-2 py-1 text-[9px] font-bold text-white/60">CARTÃO</span>
+              <span className="rounded bg-white/5 px-2 py-1 text-[9px] font-bold text-white/60">PIX</span>
+              <span className="rounded bg-white/5 px-2 py-1 text-[9px] font-bold text-white/60">BOLETO</span>
+            </div>
             <p className="flex items-center justify-center gap-1.5 text-[11px] text-white/45">
               <Icon name="ShieldCheck" size={13} className="text-emerald-400" />
-              Pagamento seguro · 7 dias de garantia
+              Pagamento seguro via Mercado Pago · 7 dias de garantia
             </p>
           </form>
         </div>
