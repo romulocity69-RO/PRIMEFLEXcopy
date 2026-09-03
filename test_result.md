@@ -201,6 +201,54 @@ backend:
         -agent: "testing"
         -comment: "✅ VERIFIED: Root endpoint returns {'message': 'Hello World'}. Basic API routing working correctly."
 
+  - task: "Authentication - POST /api/auth/register endpoint"
+    implemented: true
+    working: true
+    file: "backend/auth.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "✅ VERIFIED: Registration endpoint working perfectly. (1) Successful registration returns 200 with JWT token and user object containing id, name, email (lowercased), plan='free', is_admin=false, onboarding_done=false. (2) Password/hash NOT present in response (security ✓). (3) Duplicate email correctly rejected with 409 'Este e-mail já está cadastrado'. (4) Invalid email format rejected with 422. (5) Password shorter than 6 chars rejected with 422. All validation rules working correctly."
+
+  - task: "Authentication - POST /api/auth/login endpoint"
+    implemented: true
+    working: true
+    file: "backend/auth.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "✅ VERIFIED: Login endpoint working perfectly. (1) Successful login with correct credentials returns 200 with JWT token and user object. (2) Wrong password correctly rejected with 401 'E-mail ou senha incorretos'. (3) Email is lowercased and matched correctly. (4) JWT token generated with 30-day expiry. All authentication logic working correctly."
+
+  - task: "Authentication - GET /api/auth/me endpoint"
+    implemented: true
+    working: true
+    file: "backend/auth.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "✅ VERIFIED: Protected endpoint working perfectly. (1) Request without Authorization header correctly rejected with 401 'Não autenticado'. (2) Request with valid Bearer token returns 200 with user object matching registered email. (3) Malformed/garbage token correctly rejected with 401 'Sessão inválida ou expirada'. (4) User data returned correctly with all fields. JWT authentication and authorization working correctly."
+
+  - task: "Authentication - PUT /api/auth/profile endpoint"
+    implemented: true
+    working: true
+    file: "backend/auth.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "✅ VERIFIED: Profile update endpoint working perfectly. (1) Update with Bearer token and body {weight:58.5, height:165, goal:'hipertrofia', level:'iniciante', onboarding_done:true} returns 200. (2) Returned user.profile contains all updated fields with correct values. (3) onboarding_done correctly updated to true. (4) Profile data persists to MongoDB - verified by subsequent GET /api/auth/me returning weight=58.5 and onboarding_done=true. All profile update logic working correctly."
+
 frontend:
   - task: "Landing - botão PAUSAR TREINO (Prime Flex) abre modal"
     implemented: true
@@ -310,10 +358,22 @@ frontend:
         -agent: "testing"
         -comment: "✅ VERIFIED: Top navigation items trigger smooth scroll to sections (scroll position changed from 0 to 1195). Pricing plan buttons ('QUERO O START', etc.) navigate to checkout pages (/contratar/start). Floating 'Ver o app' button navigates to /app/start. 'Voltar ao site' link navigates back to landing page. All navigation working correctly."
 
+  - task: "Checkout/Payment UI Flow - Complete end-to-end payment flow"
+    implemented: true
+    working: true
+    file: "src/pages/Checkout.jsx, src/components/landing/PricingPlans.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "✅ COMPREHENSIVE CHECKOUT FLOW TESTED - ALL FEATURES WORKING! (1) Landing page 'QUERO O PRIME 2.0' button successfully navigates to /contratar/2.0. (2) Checkout page renders all UI elements correctly: tabs (Criar conta/Já tenho conta), form fields (Seu nome/Seu e-mail), payment button (Ir para o pagamento), payment badges (CARTÃO/PIX/BOLETO), secure payment text, plan details (2.0), duration options (MENSAL/TRIMESTRAL/SEMESTRAL/ANUAL), and Total. (3) Duration selection works perfectly - clicking SEMESTRAL updates Total from R$ 179,90/3 meses to R$ 279,90/6 meses. (4) Form validation working - empty form submission shows toast 'Preencha nome e e-mail para continuar' and prevents submission. (5) Form submission with valid data (name='Teste Prime', email='teste@example.com') shows loading state 'Redirecionando...', calls POST /api/payments/checkout (200 status), and successfully redirects to Mercado Pago checkout URL (https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=...). (6) Only 1 minor console error (403 external resource, not app-related). Frontend-backend integration for payment flow is PRODUCTION-READY."
+
 metadata:
   created_by: "main_agent"
-  version: "1.3"
-  test_sequence: 3
+  version: "1.5"
+  test_sequence: 5
   run_ui: false
 
 test_plan:
@@ -329,3 +389,7 @@ agent_communication:
     -message: "✅ COMPREHENSIVE TESTING COMPLETED - ALL FEATURES WORKING! Tested all 12 interaction points from user's bug report. Key findings: (1) PAUSAR TREINO button bug is FIXED - clicks work without force, modal opens/closes correctly. (2) Login modal works perfectly with both tabs and navigation. (3) All app modals (Iniciar treino, Exercise details, 3D panels) open and close correctly. (4) Bottom navigation, plan switcher, and all navigation links work. (5) Message sending and exercise adding features work. (6) No console errors from app (only Cloudflare CDN monitoring requests which are not app issues). All user-reported issues are RESOLVED. App is ready for production."
     -agent: "testing"
     -message: "✅ MERCADO PAGO BACKEND INTEGRATION FULLY TESTED - ALL ENDPOINTS WORKING! Tested all 8 backend payment tasks (12 test scenarios total). Key findings: (1) Production Mercado Pago credentials are valid and working - successfully created REAL payment preference via MP API. (2) All endpoints return correct responses: /config, /plans, /checkout, /status, /verify, /webhook. (3) Input validation working correctly (invalid plan/period return 400, missing email returns 422). (4) MongoDB transactions collection stores payment data correctly with status 'pending'. (5) Webhook signature validation disabled as expected (MP_WEBHOOK_SECRET empty). (6) All CRUD operations and error handling verified. Backend payment integration is production-ready."
+    -agent: "testing"
+    -message: "✅ CHECKOUT/PAYMENT UI FLOW FULLY TESTED - ALL FEATURES WORKING! Tested complete end-to-end payment flow with 5 comprehensive test scenarios. Key findings: (1) Landing page pricing button navigation works perfectly - 'QUERO O PRIME 2.0' navigates to /contratar/2.0. (2) All checkout page UI elements render correctly (tabs, form fields, payment badges, duration options, total). (3) Duration selection updates price correctly (TRIMESTRAL R$ 179,90 → SEMESTRAL R$ 279,90). (4) Form validation prevents empty submission with proper toast message. (5) Form submission with valid data shows loading state, calls /api/payments/checkout (200), and redirects to Mercado Pago checkout URL. (6) Frontend-backend integration working flawlessly. Payment flow is PRODUCTION-READY."
+    -agent: "testing"
+    -message: "✅ AUTHENTICATION BACKEND FULLY TESTED - ALL ENDPOINTS WORKING PERFECTLY! Tested all 4 auth endpoints with 11 comprehensive scenarios plus 3 sanity checks (14 tests total, 14 passed). Key findings: (1) POST /api/auth/register: successful registration returns 200 with JWT token + user object (id, name, email lowercased, plan='free', is_admin=false, onboarding_done=false). Password/hash NOT in response (security ✓). Duplicate email rejected with 409. Invalid email/short password rejected with 422. (2) POST /api/auth/login: successful login returns 200 with token + user. Wrong password rejected with 401. (3) GET /api/auth/me: no auth header rejected with 401. Valid Bearer token returns 200 with user data. Malformed token rejected with 401. (4) PUT /api/auth/profile: updates weight, height, goal, level, onboarding_done correctly. Profile persists to MongoDB. (5) Existing endpoints still working: GET /api/, GET /api/payments/config, POST /api/payments/checkout. Authentication system is PRODUCTION-READY with proper security, validation, and JWT implementation."

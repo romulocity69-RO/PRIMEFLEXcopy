@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "../ui/dialog";
 import Icon from "../Icon";
 import { useToast } from "../../hooks/use-toast";
+import { useAuth } from "../../context/AuthContext";
 
 const Field = ({ icon, ...props }) => (
   <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 focus-within:border-prime-pink">
@@ -17,28 +18,37 @@ const Field = ({ icon, ...props }) => (
 const LoginModal = ({ open, onOpenChange }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login, register } = useAuth();
   const [mode, setMode] = useState("login");
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (!form.email || !form.password || (mode === "signup" && !form.name)) {
       toast({ title: "Preencha todos os campos para continuar." });
       return;
     }
+    setLoading(true);
     try {
-      localStorage.setItem(
-        "gluteoprime_user",
-        JSON.stringify({ name: form.name || "Aluna Prime", email: form.email })
-      );
-    } catch (_) {}
-    onOpenChange(false);
-    toast({
-      title: mode === "login" ? "Login realizado! (demonstração)" : "Conta criada! (demonstração)",
-      description: "Bem-vinda ao Glúteo Prime 💗",
-    });
-    setTimeout(() => navigate("/app/start"), 900);
+      if (mode === "login") {
+        await login(form.email, form.password);
+      } else {
+        await register(form.name, form.email, form.password);
+      }
+      onOpenChange(false);
+      toast({
+        title: mode === "login" ? "Login realizado!" : "Conta criada!",
+        description: "Bem-vinda ao Glúteo Prime 💗",
+      });
+      setTimeout(() => navigate("/app/start"), 700);
+    } catch (err) {
+      const msg = err?.response?.data?.detail || "Não foi possível continuar. Tente novamente.";
+      toast({ title: msg });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -84,8 +94,10 @@ const LoginModal = ({ open, onOpenChange }) => {
           <Field icon="Lock" type="password" placeholder="Sua senha" value={form.password} onChange={set("password")} />
           <button
             type="submit"
-            className="w-full rounded-xl bg-gradient-to-r from-prime-pink to-prime-pinkdeep py-3 text-sm font-extrabold text-white transition-transform hover:scale-[1.02]"
+            disabled={loading}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-prime-pink to-prime-pinkdeep py-3 text-sm font-extrabold text-white transition-transform hover:scale-[1.02] disabled:opacity-60"
           >
+            {loading && <Icon name="Loader2" size={15} className="animate-spin" />}
             {mode === "login" ? "Entrar" : "Criar minha conta"}
           </button>
         </form>
