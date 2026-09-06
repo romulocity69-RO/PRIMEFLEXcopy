@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "../ui/dia
 import Icon from "../Icon";
 import { useToast } from "../../hooks/use-toast";
 import { useAuth } from "../../context/AuthContext";
+import OnboardingModal from "../app/OnboardingModal";
 
 const Field = ({ icon, ...props }) => (
   <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 focus-within:border-prime-pink">
@@ -21,6 +22,7 @@ const LoginModal = ({ open, onOpenChange }) => {
   const { login, register } = useAuth();
   const [mode, setMode] = useState("login");
   const [loading, setLoading] = useState(false);
+  const [onboardOpen, setOnboardOpen] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -32,17 +34,23 @@ const LoginModal = ({ open, onOpenChange }) => {
     }
     setLoading(true);
     try {
+      let u;
       if (mode === "login") {
-        await login(form.email, form.password);
+        u = await login(form.email, form.password);
       } else {
-        await register(form.name, form.email, form.password);
+        u = await register(form.name, form.email, form.password);
       }
-      onOpenChange(false);
       toast({
         title: mode === "login" ? "Login realizado!" : "Conta criada!",
         description: "Bem-vinda ao Glúteo Prime 💗",
       });
-      setTimeout(() => navigate("/app/start"), 700);
+      if (!u?.onboarding_done) {
+        onOpenChange(false);
+        setOnboardOpen(true);
+      } else {
+        onOpenChange(false);
+        setTimeout(() => navigate("/app/start"), 500);
+      }
     } catch (err) {
       const msg = err?.response?.data?.detail || "Não foi possível continuar. Tente novamente.";
       toast({ title: msg });
@@ -52,6 +60,7 @@ const LoginModal = ({ open, onOpenChange }) => {
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm border-white/10 bg-prime-card text-white">
         <DialogTitle className="sr-only">Entrar ou criar conta</DialogTitle>
@@ -108,6 +117,13 @@ const LoginModal = ({ open, onOpenChange }) => {
         </p>
       </DialogContent>
     </Dialog>
+    <OnboardingModal
+      open={onboardOpen}
+      onOpenChange={setOnboardOpen}
+      mode="onboarding"
+      onDone={() => navigate("/app/start")}
+    />
+    </>
   );
 };
 

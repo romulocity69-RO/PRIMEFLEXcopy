@@ -74,8 +74,19 @@ from payments import router as payments_router
 app.include_router(payments_router)
 
 # Authentication router
-from auth import router as auth_router
+from auth import router as auth_router, ensure_admin
 app.include_router(auth_router)
+
+# App data (workout sessions + admin) router
+from app_data import router as app_data_router
+app.include_router(app_data_router)
+
+@app.on_event("startup")
+async def _seed_admin():
+    try:
+        await ensure_admin()
+    except Exception as e:
+        logger.error("admin seed failed: %s", e)
 
 app.add_middleware(
     CORSMiddleware,

@@ -117,6 +117,21 @@ async def _apply_payment(payment: dict):
             "updated_at": time.time(),
         }},
     )
+    # Activate Premium on the user's account when payment is approved
+    if mapped == "paid":
+        tx = await _tx.find_one({"external_reference": ref})
+        if tx and tx.get("email"):
+            days = {"mensal": 30, "trimestral": 90, "semestral": 180, "anual": 365}.get(tx.get("period"), 30)
+            await _db.users.update_one(
+                {"email": tx["email"].lower()},
+                {"$set": {
+                    "plan": "premium",
+                    "plan_period": tx.get("period"),
+                    "plan_id": tx.get("plan_id"),
+                    "premium_since": time.time(),
+                    "premium_expires": time.time() + days * 86400,
+                }},
+            )
     return mapped
 
 

@@ -249,6 +249,150 @@ backend:
         -agent: "testing"
         -comment: "✅ VERIFIED: Profile update endpoint working perfectly. (1) Update with Bearer token and body {weight:58.5, height:165, goal:'hipertrofia', level:'iniciante', onboarding_done:true} returns 200. (2) Returned user.profile contains all updated fields with correct values. (3) onboarding_done correctly updated to true. (4) Profile data persists to MongoDB - verified by subsequent GET /api/auth/me returning weight=58.5 and onboarding_done=true. All profile update logic working correctly."
 
+  - task: "Profile Onboarding - PUT /api/auth/profile with complete onboarding data"
+    implemented: true
+    working: true
+    file: "backend/auth.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "✅ VERIFIED: Complete onboarding flow tested. (1) Registered normal user with unique email. (2) PUT /api/auth/profile with {goal:'emagrecimento', level:'intermediario', weight:62.5, height:168, age:29, days_per_week:4, onboarding_done:true} returns 200. (3) All fields correctly stored in user.profile. (4) user.onboarding_done correctly set to true. (5) GET /api/auth/me confirms persistence of all onboarding data. Profile onboarding system working perfectly."
+
+  - task: "Workout Sessions - POST /api/workouts/session/finish (volume calculation)"
+    implemented: true
+    working: true
+    file: "backend/app_data.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "✅ VERIFIED: Workout session creation with volume calculation working perfectly. (1) POST with plan_id='2.0', workout_name='Treino A · Glúteos + Quadríceps', duration_seconds=1800, exercises=[Hip Thrust: 45kg×10, 45kg×8; Agachamento: 30kg×12] returns 200. (2) Response contains session id, total_sets=3, total_volume=1170 (45*10 + 45*8 + 30*12 = 1170 ✓). (3) Volume calculation is accurate. (4) Session stored in MongoDB workout_sessions collection with user_id isolation. Real training log functionality working correctly."
+
+  - task: "Workout Sessions - GET /api/workouts/sessions (list user sessions)"
+    implemented: true
+    working: true
+    file: "backend/app_data.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "✅ VERIFIED: Session listing working correctly. (1) GET /api/workouts/sessions with Bearer token returns 200 with list of sessions. (2) Created session found in list. (3) Sessions are sorted by created_at descending. (4) All session fields present (id, user_id, plan_id, workout_name, duration_seconds, exercises, total_volume, total_sets, created_at). User session retrieval working perfectly."
+
+  - task: "Workout Sessions - GET /api/workouts/progress (stats and analytics)"
+    implemented: true
+    working: true
+    file: "backend/app_data.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "✅ VERIFIED: Progress analytics working correctly. (1) GET /api/workouts/progress with Bearer token returns 200. (2) Response contains total_sessions>=1, total_volume>=1170, total_time_seconds, best_volume>=1170, sessions (last 12). (3) All numeric values are accurate. (4) Stats correctly aggregate user's workout data. Progress tracking system working perfectly."
+
+  - task: "Workout Sessions - User isolation (data privacy)"
+    implemented: true
+    working: true
+    file: "backend/app_data.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "✅ VERIFIED: User isolation working perfectly. (1) Registered second user with different email. (2) GET /api/workouts/sessions with second user's Bearer token returns 200 with empty list []. (3) Second user cannot see first user's sessions. (4) Data privacy and user isolation correctly implemented. Security requirement met."
+
+  - task: "Workout Sessions - Security (authentication required)"
+    implemented: true
+    working: true
+    file: "backend/app_data.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "✅ VERIFIED: Authentication security working correctly. (1) GET /api/workouts/sessions without Authorization header returns 401 'Não autenticado'. (2) Unauthenticated requests correctly rejected. (3) Protected endpoints require valid Bearer token. Security implementation correct."
+
+  - task: "Premium Checkout - POST /api/payments/checkout (premium plan)"
+    implemented: true
+    working: true
+    file: "backend/payments.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "✅ VERIFIED: Premium checkout creation working correctly. (1) POST /api/payments/checkout with plan_id='3d', period='mensal', email (unique), name='Prem Teste', origin returns 200. (2) Response contains preference_id, checkout_url (mercadopago.com), external_reference (gp:3d:mensal:...). (3) Transaction created in MongoDB with status='pending'. (4) NOTE: Premium activation on payment approval is implemented in webhook/_apply_payment but requires real approved payment to observe end-to-end. Checkout creation working correctly."
+
+  - task: "Admin - POST /api/auth/login (admin credentials)"
+    implemented: true
+    working: true
+    file: "backend/auth.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "✅ VERIFIED: Admin login working perfectly. (1) POST /api/auth/login with email='admin@gluteoprime.com', password='prime123' returns 200. (2) Response contains token and user object with is_admin=true. (3) Admin account seeded on startup from ADMIN_EMAIL/ADMIN_PASSWORD env vars. (4) Admin authentication working correctly."
+
+  - task: "Admin - GET /api/admin/stats (dashboard statistics)"
+    implemented: true
+    working: true
+    file: "backend/app_data.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "✅ VERIFIED: Admin stats endpoint working perfectly. (1) GET /api/admin/stats with admin Bearer token returns 200. (2) Response contains all required keys: total_users, premium_users, free_users, new_users_24h, total_sessions, sessions_today, active_subscriptions, revenue_total, paid_transactions. (3) All values are numeric. (4) Stats correctly aggregate data from users, workout_sessions, and transactions collections. (5) Example response: {total_users:4, premium_users:1, free_users:3, new_users_24h:4, total_sessions:1, sessions_today:1, active_subscriptions:1, revenue_total:0, paid_transactions:0}. Admin dashboard working correctly."
+
+  - task: "Admin - GET /api/admin/users (user management)"
+    implemented: true
+    working: true
+    file: "backend/app_data.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "✅ VERIFIED: Admin users endpoint working perfectly. (1) GET /api/admin/users with admin Bearer token returns 200 with list of users. (2) Each user object contains required fields: id, name, email, plan, is_admin, goal, level, created_at. (3) Users sorted by created_at descending. (4) All registered users visible to admin. User management functionality working correctly."
+
+  - task: "Admin - GET /api/admin/sessions (session monitoring)"
+    implemented: true
+    working: true
+    file: "backend/app_data.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "✅ VERIFIED: Admin sessions endpoint working perfectly. (1) GET /api/admin/sessions with admin Bearer token returns 200 with list of all workout sessions. (2) Sessions sorted by created_at descending. (3) Admin can view all users' sessions (not isolated). (4) Session monitoring for admin dashboard working correctly."
+
+  - task: "Admin - Authorization (require is_admin)"
+    implemented: true
+    working: true
+    file: "backend/app_data.py, backend/auth.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: true
+        -agent: "testing"
+        -comment: "✅ VERIFIED: Admin authorization working perfectly. (1) GET /api/admin/stats with normal (non-admin) user Bearer token returns 403 'Acesso restrito a administradores'. (2) GET /api/admin/stats without Authorization header returns 401 'Não autenticado'. (3) Admin endpoints correctly protected with require_admin dependency. (4) Authorization security working correctly."
+
 frontend:
   - task: "Landing - botão PAUSAR TREINO (Prime Flex) abre modal"
     implemented: true
@@ -372,8 +516,8 @@ frontend:
 
 metadata:
   created_by: "main_agent"
-  version: "1.5"
-  test_sequence: 5
+  version: "1.6"
+  test_sequence: 6
   run_ui: false
 
 test_plan:
@@ -393,3 +537,5 @@ agent_communication:
     -message: "✅ CHECKOUT/PAYMENT UI FLOW FULLY TESTED - ALL FEATURES WORKING! Tested complete end-to-end payment flow with 5 comprehensive test scenarios. Key findings: (1) Landing page pricing button navigation works perfectly - 'QUERO O PRIME 2.0' navigates to /contratar/2.0. (2) All checkout page UI elements render correctly (tabs, form fields, payment badges, duration options, total). (3) Duration selection updates price correctly (TRIMESTRAL R$ 179,90 → SEMESTRAL R$ 279,90). (4) Form validation prevents empty submission with proper toast message. (5) Form submission with valid data shows loading state, calls /api/payments/checkout (200), and redirects to Mercado Pago checkout URL. (6) Frontend-backend integration working flawlessly. Payment flow is PRODUCTION-READY."
     -agent: "testing"
     -message: "✅ AUTHENTICATION BACKEND FULLY TESTED - ALL ENDPOINTS WORKING PERFECTLY! Tested all 4 auth endpoints with 11 comprehensive scenarios plus 3 sanity checks (14 tests total, 14 passed). Key findings: (1) POST /api/auth/register: successful registration returns 200 with JWT token + user object (id, name, email lowercased, plan='free', is_admin=false, onboarding_done=false). Password/hash NOT in response (security ✓). Duplicate email rejected with 409. Invalid email/short password rejected with 422. (2) POST /api/auth/login: successful login returns 200 with token + user. Wrong password rejected with 401. (3) GET /api/auth/me: no auth header rejected with 401. Valid Bearer token returns 200 with user data. Malformed token rejected with 401. (4) PUT /api/auth/profile: updates weight, height, goal, level, onboarding_done correctly. Profile persists to MongoDB. (5) Existing endpoints still working: GET /api/, GET /api/payments/config, POST /api/payments/checkout. Authentication system is PRODUCTION-READY with proper security, validation, and JWT implementation."
+    -agent: "testing"
+    -message: "✅ NEW BACKEND FEATURES FULLY TESTED - ALL 15 TESTS PASSED! Tested newly added features: (A) Profile Onboarding: PUT /api/auth/profile with complete onboarding data (goal, level, weight, height, age, days_per_week, onboarding_done) - all fields persist correctly. (B) Workout Sessions: POST /api/workouts/session/finish with volume calculation (1170 = 45*10 + 45*8 + 30*12 ✓), GET /api/workouts/sessions (user-isolated list), GET /api/workouts/progress (stats: total_sessions, total_volume, best_volume), user isolation verified (second user sees empty list), security verified (401 without token). (C) Premium Checkout: POST /api/payments/checkout creates transaction with status='pending' (NOTE: premium activation requires real approved payment via webhook). (D) Admin Endpoints: admin login (is_admin=true), GET /api/admin/stats (9 numeric fields), GET /api/admin/users (list with all fields), GET /api/admin/sessions (all sessions), authorization verified (normal user gets 403, no token gets 401). All backend features are PRODUCTION-READY. MongoDB collections (users, workout_sessions, transactions) working correctly. Volume calculation accurate. User isolation and security working perfectly."

@@ -1,545 +1,568 @@
 #!/usr/bin/env python3
 """
-Backend Authentication Testing Script
-Tests all auth endpoints with comprehensive scenarios
+Comprehensive backend test for Glúteo Prime app.
+Tests: Profile onboarding, Workout sessions, Premium checkout, Admin endpoints.
 """
 import requests
-import time
 import json
-from typing import Dict, Any
+import time
+import random
+import string
 
-# Base URL from frontend/.env
+# Base URL from frontend/.env REACT_APP_BACKEND_URL with /api prefix
 BASE_URL = "https://musclefit-hub.preview.emergentagent.com/api"
 
-# Generate unique email using timestamp
-TIMESTAMP = int(time.time())
-UNIQUE_EMAIL = f"teste+{TIMESTAMP}@example.com"
+# Admin credentials from backend/.env
+ADMIN_EMAIL = "admin@gluteoprime.com"
+ADMIN_PASSWORD = "prime123"
 
-# Test data
-TEST_USER = {
-    "name": "Maria Teste",
-    "email": UNIQUE_EMAIL,
-    "password": "senha123"
-}
+# Test results tracking
+results = []
 
-# Colors for output
-GREEN = "\033[92m"
-RED = "\033[91m"
-YELLOW = "\033[93m"
-BLUE = "\033[94m"
-RESET = "\033[0m"
+def log_test(test_name, passed, details=""):
+    """Log test result"""
+    status = "✅ PASS" if passed else "❌ FAIL"
+    results.append({"test": test_name, "passed": passed, "details": details})
+    print(f"{status}: {test_name}")
+    if details:
+        print(f"  Details: {details}")
 
-def print_test(test_name: str):
-    print(f"\n{BLUE}{'='*80}{RESET}")
-    print(f"{BLUE}TEST: {test_name}{RESET}")
-    print(f"{BLUE}{'='*80}{RESET}")
+def generate_unique_email():
+    """Generate unique email for each test run"""
+    random_str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+    return f"testuser_{random_str}_{int(time.time())}@example.com"
 
-def print_pass(message: str):
-    print(f"{GREEN}✓ PASS: {message}{RESET}")
-
-def print_fail(message: str):
-    print(f"{RED}✗ FAIL: {message}{RESET}")
-
-def print_info(message: str):
-    print(f"{YELLOW}ℹ INFO: {message}{RESET}")
-
-def check_user_response(user: Dict[str, Any], email: str, should_have_password: bool = False) -> bool:
-    """Validate user object structure and content"""
-    errors = []
+def test_profile_onboarding():
+    """A) PROFILE - Test onboarding data persistence"""
+    print("\n=== A) PROFILE ONBOARDING ===")
     
-    # Required fields
-    if "id" not in user:
-        errors.append("Missing 'id' field")
-    if "name" not in user:
-        errors.append("Missing 'name' field")
-    if "email" not in user:
-        errors.append("Missing 'email' field")
-    elif user["email"] != email.lower():
-        errors.append(f"Email not lowercased: expected '{email.lower()}', got '{user['email']}'")
+    # 1. Register a normal user with unique email
+    user_email = generate_unique_email()
+    register_data = {
+        "name": "Test User",
+        "email": user_email,
+        "password": "testpass123"
+    }
     
-    # Default values
-    if user.get("plan") != "free":
-        errors.append(f"Expected plan='free', got '{user.get('plan')}'")
-    if user.get("is_admin") != False:
-        errors.append(f"Expected is_admin=False, got '{user.get('is_admin')}'")
-    if user.get("onboarding_done") != False:
-        errors.append(f"Expected onboarding_done=False, got '{user.get('onboarding_done')}'")
-    
-    # Security: password/hash must NOT be present
-    if "password" in user:
-        errors.append("SECURITY ISSUE: 'password' field present in response")
-    if "password_hash" in user:
-        errors.append("SECURITY ISSUE: 'password_hash' field present in response")
-    
-    if errors:
-        for error in errors:
-            print_fail(error)
-        return False
-    return True
-
-# Store token for subsequent tests
-auth_token = None
-
-# Test Results Summary
-test_results = []
-
-def run_test(test_name: str, test_func):
-    """Run a test and track results"""
-    global test_results
-    print_test(test_name)
     try:
-        result = test_func()
-        test_results.append({"name": test_name, "passed": result})
-        return result
+        resp = requests.post(f"{BASE_URL}/auth/register", json=register_data, timeout=10)
+        if resp.status_code != 200:
+            log_test("A1: Register normal user", False, f"Status {resp.status_code}: {resp.text}")
+            return None, None
+        
+        data = resp.json()
+        token = data.get("token")
+        user = data.get("user")
+        
+        if not token or not user:
+            log_test("A1: Register normal user", False, "Missing token or user in response")
+            return None, None
+        
+        log_test("A1: Register normal user", True, f"User ID: {user.get('id')}, Email: {user.get('email')}")
+        
     except Exception as e:
-        print_fail(f"Exception: {str(e)}")
-        test_results.append({"name": test_name, "passed": False})
-        return False
-
-# ============================================================================
-# TEST 1: POST /api/auth/register - Successful registration
-# ============================================================================
-def test_register_success():
-    global auth_token
-    print_info(f"Registering user with email: {TEST_USER['email']}")
+        log_test("A1: Register normal user", False, f"Exception: {str(e)}")
+        return None, None
     
-    response = requests.post(f"{BASE_URL}/auth/register", json=TEST_USER)
-    print_info(f"Status Code: {response.status_code}")
-    
-    if response.status_code != 200:
-        print_fail(f"Expected 200, got {response.status_code}")
-        print_info(f"Response: {response.text}")
-        return False
-    
-    data = response.json()
-    print_info(f"Response: {json.dumps(data, indent=2)}")
-    
-    # Check token
-    if "token" not in data:
-        print_fail("Missing 'token' in response")
-        return False
-    auth_token = data["token"]
-    print_pass(f"Token received: {auth_token[:20]}...")
-    
-    # Check user object
-    if "user" not in data:
-        print_fail("Missing 'user' in response")
-        return False
-    
-    user = data["user"]
-    if not check_user_response(user, TEST_USER["email"]):
-        return False
-    
-    print_pass("Registration successful with correct user structure")
-    return True
-
-# ============================================================================
-# TEST 2: POST /api/auth/register - Duplicate email (409)
-# ============================================================================
-def test_register_duplicate():
-    print_info(f"Attempting to register with same email: {TEST_USER['email']}")
-    
-    response = requests.post(f"{BASE_URL}/auth/register", json=TEST_USER)
-    print_info(f"Status Code: {response.status_code}")
-    
-    if response.status_code != 409:
-        print_fail(f"Expected 409, got {response.status_code}")
-        print_info(f"Response: {response.text}")
-        return False
-    
-    data = response.json()
-    print_info(f"Response: {json.dumps(data, indent=2)}")
-    print_pass("Duplicate email correctly rejected with 409")
-    return True
-
-# ============================================================================
-# TEST 3: POST /api/auth/register - Invalid email (422)
-# ============================================================================
-def test_register_invalid_email():
-    print_info("Testing invalid email format")
-    
-    invalid_data = {
-        "name": "Test User",
-        "email": "not-an-email",
-        "password": "senha123"
-    }
-    
-    response = requests.post(f"{BASE_URL}/auth/register", json=invalid_data)
-    print_info(f"Status Code: {response.status_code}")
-    
-    if response.status_code != 422:
-        print_fail(f"Expected 422, got {response.status_code}")
-        print_info(f"Response: {response.text}")
-        return False
-    
-    print_pass("Invalid email correctly rejected with 422")
-    return True
-
-# ============================================================================
-# TEST 4: POST /api/auth/register - Short password (422)
-# ============================================================================
-def test_register_short_password():
-    print_info("Testing password shorter than 6 characters")
-    
-    invalid_data = {
-        "name": "Test User",
-        "email": f"test{TIMESTAMP}@example.com",
-        "password": "12345"  # Only 5 characters
-    }
-    
-    response = requests.post(f"{BASE_URL}/auth/register", json=invalid_data)
-    print_info(f"Status Code: {response.status_code}")
-    
-    if response.status_code != 422:
-        print_fail(f"Expected 422, got {response.status_code}")
-        print_info(f"Response: {response.text}")
-        return False
-    
-    print_pass("Short password correctly rejected with 422")
-    return True
-
-# ============================================================================
-# TEST 5: POST /api/auth/login - Successful login
-# ============================================================================
-def test_login_success():
-    global auth_token
-    print_info(f"Logging in with email: {TEST_USER['email']}")
-    
-    login_data = {
-        "email": TEST_USER["email"],
-        "password": TEST_USER["password"]
-    }
-    
-    response = requests.post(f"{BASE_URL}/auth/login", json=login_data)
-    print_info(f"Status Code: {response.status_code}")
-    
-    if response.status_code != 200:
-        print_fail(f"Expected 200, got {response.status_code}")
-        print_info(f"Response: {response.text}")
-        return False
-    
-    data = response.json()
-    print_info(f"Response: {json.dumps(data, indent=2)}")
-    
-    # Check token
-    if "token" not in data:
-        print_fail("Missing 'token' in response")
-        return False
-    auth_token = data["token"]
-    print_pass(f"Token received: {auth_token[:20]}...")
-    
-    # Check user object
-    if "user" not in data:
-        print_fail("Missing 'user' in response")
-        return False
-    
-    user = data["user"]
-    if not check_user_response(user, TEST_USER["email"]):
-        return False
-    
-    print_pass("Login successful with correct user structure")
-    return True
-
-# ============================================================================
-# TEST 6: POST /api/auth/login - Wrong password (401)
-# ============================================================================
-def test_login_wrong_password():
-    print_info("Testing login with wrong password")
-    
-    login_data = {
-        "email": TEST_USER["email"],
-        "password": "wrongpassword123"
-    }
-    
-    response = requests.post(f"{BASE_URL}/auth/login", json=login_data)
-    print_info(f"Status Code: {response.status_code}")
-    
-    if response.status_code != 401:
-        print_fail(f"Expected 401, got {response.status_code}")
-        print_info(f"Response: {response.text}")
-        return False
-    
-    print_pass("Wrong password correctly rejected with 401")
-    return True
-
-# ============================================================================
-# TEST 7: GET /api/auth/me - Without Authorization header (401)
-# ============================================================================
-def test_me_no_auth():
-    print_info("Testing /me without Authorization header")
-    
-    response = requests.get(f"{BASE_URL}/auth/me")
-    print_info(f"Status Code: {response.status_code}")
-    
-    if response.status_code != 401:
-        print_fail(f"Expected 401, got {response.status_code}")
-        print_info(f"Response: {response.text}")
-        return False
-    
-    print_pass("Unauthorized request correctly rejected with 401")
-    return True
-
-# ============================================================================
-# TEST 8: GET /api/auth/me - With valid Bearer token (200)
-# ============================================================================
-def test_me_with_auth():
-    print_info("Testing /me with valid Bearer token")
-    
-    if not auth_token:
-        print_fail("No auth token available")
-        return False
-    
-    headers = {"Authorization": f"Bearer {auth_token}"}
-    response = requests.get(f"{BASE_URL}/auth/me", headers=headers)
-    print_info(f"Status Code: {response.status_code}")
-    
-    if response.status_code != 200:
-        print_fail(f"Expected 200, got {response.status_code}")
-        print_info(f"Response: {response.text}")
-        return False
-    
-    data = response.json()
-    print_info(f"Response: {json.dumps(data, indent=2)}")
-    
-    if "user" not in data:
-        print_fail("Missing 'user' in response")
-        return False
-    
-    user = data["user"]
-    if not check_user_response(user, TEST_USER["email"]):
-        return False
-    
-    print_pass("GET /me successful with correct user data")
-    return True
-
-# ============================================================================
-# TEST 9: PUT /api/auth/profile - Update profile (200)
-# ============================================================================
-def test_update_profile():
-    print_info("Testing profile update")
-    
-    if not auth_token:
-        print_fail("No auth token available")
-        return False
-    
+    # 2. PUT /api/auth/profile with onboarding data
     profile_data = {
-        "weight": 58.5,
-        "height": 165,
-        "goal": "hipertrofia",
-        "level": "iniciante",
+        "goal": "emagrecimento",
+        "level": "intermediario",
+        "weight": 62.5,
+        "height": 168,
+        "age": 29,
+        "days_per_week": 4,
         "onboarding_done": True
     }
     
-    headers = {"Authorization": f"Bearer {auth_token}"}
-    response = requests.put(f"{BASE_URL}/auth/profile", json=profile_data, headers=headers)
-    print_info(f"Status Code: {response.status_code}")
+    headers = {"Authorization": f"Bearer {token}"}
     
-    if response.status_code != 200:
-        print_fail(f"Expected 200, got {response.status_code}")
-        print_info(f"Response: {response.text}")
-        return False
+    try:
+        resp = requests.put(f"{BASE_URL}/auth/profile", json=profile_data, headers=headers, timeout=10)
+        if resp.status_code != 200:
+            log_test("A2: Update profile with onboarding data", False, f"Status {resp.status_code}: {resp.text}")
+            return token, user_email
+        
+        data = resp.json()
+        updated_user = data.get("user", {})
+        profile = updated_user.get("profile", {})
+        
+        # Verify all fields
+        checks = [
+            ("goal", profile.get("goal") == "emagrecimento"),
+            ("level", profile.get("level") == "intermediario"),
+            ("weight", profile.get("weight") == 62.5),
+            ("height", profile.get("height") == 168),
+            ("age", profile.get("age") == 29),
+            ("days_per_week", profile.get("days_per_week") == 4),
+            ("onboarding_done", profile.get("onboarding_done") == True),
+            ("user.onboarding_done", updated_user.get("onboarding_done") == True)
+        ]
+        
+        failed_checks = [name for name, check in checks if not check]
+        
+        if failed_checks:
+            log_test("A2: Update profile with onboarding data", False, f"Failed checks: {failed_checks}. Profile: {profile}")
+            return token, user_email
+        
+        log_test("A2: Update profile with onboarding data", True, f"All fields updated correctly")
+        
+    except Exception as e:
+        log_test("A2: Update profile with onboarding data", False, f"Exception: {str(e)}")
+        return token, user_email
     
-    data = response.json()
-    print_info(f"Response: {json.dumps(data, indent=2)}")
+    # 3. GET /api/auth/me to confirm persistence
+    try:
+        resp = requests.get(f"{BASE_URL}/auth/me", headers=headers, timeout=10)
+        if resp.status_code != 200:
+            log_test("A3: Verify profile persistence (GET /me)", False, f"Status {resp.status_code}: {resp.text}")
+            return token, user_email
+        
+        data = resp.json()
+        persisted_user = data.get("user", {})
+        persisted_profile = persisted_user.get("profile", {})
+        
+        # Verify persistence
+        checks = [
+            ("goal", persisted_profile.get("goal") == "emagrecimento"),
+            ("weight", persisted_profile.get("weight") == 62.5),
+            ("onboarding_done", persisted_profile.get("onboarding_done") == True)
+        ]
+        
+        failed_checks = [name for name, check in checks if not check]
+        
+        if failed_checks:
+            log_test("A3: Verify profile persistence (GET /me)", False, f"Failed checks: {failed_checks}")
+            return token, user_email
+        
+        log_test("A3: Verify profile persistence (GET /me)", True, "Profile data persisted correctly")
+        
+    except Exception as e:
+        log_test("A3: Verify profile persistence (GET /me)", False, f"Exception: {str(e)}")
     
-    if "user" not in data:
-        print_fail("Missing 'user' in response")
-        return False
-    
-    user = data["user"]
-    profile = user.get("profile", {})
-    
-    # Check profile fields
-    errors = []
-    if profile.get("weight") != 58.5:
-        errors.append(f"Expected weight=58.5, got {profile.get('weight')}")
-    if profile.get("height") != 165:
-        errors.append(f"Expected height=165, got {profile.get('height')}")
-    if profile.get("goal") != "hipertrofia":
-        errors.append(f"Expected goal='hipertrofia', got {profile.get('goal')}")
-    if profile.get("level") != "iniciante":
-        errors.append(f"Expected level='iniciante', got {profile.get('level')}")
-    if user.get("onboarding_done") != True:
-        errors.append(f"Expected onboarding_done=True, got {user.get('onboarding_done')}")
-    
-    if errors:
-        for error in errors:
-            print_fail(error)
-        return False
-    
-    print_pass("Profile updated successfully with correct values")
-    return True
+    return token, user_email
 
-# ============================================================================
-# TEST 10: GET /api/auth/me - Verify profile persisted (200)
-# ============================================================================
-def test_me_verify_profile():
-    print_info("Testing /me to verify profile persistence")
+def test_workout_sessions(user_token):
+    """B) WORKOUT SESSIONS - Test training log functionality"""
+    print("\n=== B) WORKOUT SESSIONS ===")
     
-    if not auth_token:
-        print_fail("No auth token available")
-        return False
+    if not user_token:
+        print("Skipping workout sessions tests - no user token")
+        return
     
-    headers = {"Authorization": f"Bearer {auth_token}"}
-    response = requests.get(f"{BASE_URL}/auth/me", headers=headers)
-    print_info(f"Status Code: {response.status_code}")
+    headers = {"Authorization": f"Bearer {user_token}"}
     
-    if response.status_code != 200:
-        print_fail(f"Expected 200, got {response.status_code}")
-        print_info(f"Response: {response.text}")
-        return False
+    # 2. POST /api/workouts/session/finish with volume calculation
+    session_data = {
+        "plan_id": "2.0",
+        "workout_name": "Treino A · Glúteos + Quadríceps",
+        "duration_seconds": 1800,
+        "exercises": [
+            {
+                "name": "Hip Thrust",
+                "series": [
+                    {"weight": 45, "reps": 10},
+                    {"weight": 45, "reps": 8}
+                ]
+            },
+            {
+                "name": "Agachamento",
+                "series": [
+                    {"weight": 30, "reps": 12}
+                ]
+            }
+        ]
+    }
     
-    data = response.json()
-    print_info(f"Response: {json.dumps(data, indent=2)}")
+    # Expected volume: 45*10 + 45*8 + 30*12 = 450 + 360 + 360 = 1170
+    expected_volume = 1170
+    expected_sets = 3
     
-    user = data.get("user", {})
-    profile = user.get("profile", {})
+    try:
+        resp = requests.post(f"{BASE_URL}/workouts/session/finish", json=session_data, headers=headers, timeout=10)
+        if resp.status_code != 200:
+            log_test("B2: POST /workouts/session/finish (volume calculation)", False, f"Status {resp.status_code}: {resp.text}")
+            return
+        
+        data = resp.json()
+        session_id = data.get("id")
+        total_volume = data.get("total_volume")
+        total_sets = data.get("total_sets")
+        
+        if not session_id:
+            log_test("B2: POST /workouts/session/finish (volume calculation)", False, "Missing session id")
+            return
+        
+        if total_sets != expected_sets:
+            log_test("B2: POST /workouts/session/finish (volume calculation)", False, f"Expected {expected_sets} sets, got {total_sets}")
+            return
+        
+        if total_volume != expected_volume:
+            log_test("B2: POST /workouts/session/finish (volume calculation)", False, f"Expected volume {expected_volume}, got {total_volume}")
+            return
+        
+        log_test("B2: POST /workouts/session/finish (volume calculation)", True, f"Session ID: {session_id}, Volume: {total_volume}, Sets: {total_sets}")
+        
+    except Exception as e:
+        log_test("B2: POST /workouts/session/finish (volume calculation)", False, f"Exception: {str(e)}")
+        return
     
-    # Verify persisted profile
-    errors = []
-    if profile.get("weight") != 58.5:
-        errors.append(f"Expected weight=58.5, got {profile.get('weight')}")
-    if user.get("onboarding_done") != True:
-        errors.append(f"Expected onboarding_done=True, got {user.get('onboarding_done')}")
+    # 3. GET /api/workouts/sessions - list sessions
+    try:
+        resp = requests.get(f"{BASE_URL}/workouts/sessions", headers=headers, timeout=10)
+        if resp.status_code != 200:
+            log_test("B3: GET /workouts/sessions (list sessions)", False, f"Status {resp.status_code}: {resp.text}")
+            return
+        
+        sessions = resp.json()
+        
+        if not isinstance(sessions, list):
+            log_test("B3: GET /workouts/sessions (list sessions)", False, f"Expected list, got {type(sessions)}")
+            return
+        
+        if len(sessions) < 1:
+            log_test("B3: GET /workouts/sessions (list sessions)", False, f"Expected at least 1 session, got {len(sessions)}")
+            return
+        
+        # Verify the session we just created is in the list
+        found = any(s.get("id") == session_id for s in sessions)
+        if not found:
+            log_test("B3: GET /workouts/sessions (list sessions)", False, "Created session not found in list")
+            return
+        
+        log_test("B3: GET /workouts/sessions (list sessions)", True, f"Found {len(sessions)} session(s)")
+        
+    except Exception as e:
+        log_test("B3: GET /workouts/sessions (list sessions)", False, f"Exception: {str(e)}")
+        return
     
-    if errors:
-        for error in errors:
-            print_fail(error)
-        return False
-    
-    print_pass("Profile correctly persisted in database")
-    return True
+    # 4. GET /api/workouts/progress - check stats
+    try:
+        resp = requests.get(f"{BASE_URL}/workouts/progress", headers=headers, timeout=10)
+        if resp.status_code != 200:
+            log_test("B4: GET /workouts/progress (stats)", False, f"Status {resp.status_code}: {resp.text}")
+            return
+        
+        data = resp.json()
+        total_sessions = data.get("total_sessions")
+        total_volume = data.get("total_volume")
+        best_volume = data.get("best_volume")
+        
+        if total_sessions < 1:
+            log_test("B4: GET /workouts/progress (stats)", False, f"Expected total_sessions >= 1, got {total_sessions}")
+            return
+        
+        if total_volume < expected_volume:
+            log_test("B4: GET /workouts/progress (stats)", False, f"Expected total_volume >= {expected_volume}, got {total_volume}")
+            return
+        
+        if best_volume < expected_volume:
+            log_test("B4: GET /workouts/progress (stats)", False, f"Expected best_volume >= {expected_volume}, got {best_volume}")
+            return
+        
+        log_test("B4: GET /workouts/progress (stats)", True, f"Sessions: {total_sessions}, Volume: {total_volume}, Best: {best_volume}")
+        
+    except Exception as e:
+        log_test("B4: GET /workouts/progress (stats)", False, f"Exception: {str(e)}")
 
-# ============================================================================
-# TEST 11: GET /api/auth/me - Malformed token (401)
-# ============================================================================
-def test_me_malformed_token():
-    print_info("Testing /me with malformed Bearer token")
+def test_user_isolation():
+    """B5) Test user isolation - second user should not see first user's sessions"""
+    print("\n=== B5) USER ISOLATION ===")
     
-    headers = {"Authorization": "Bearer garbage-token-12345"}
-    response = requests.get(f"{BASE_URL}/auth/me", headers=headers)
-    print_info(f"Status Code: {response.status_code}")
+    # Register a second user
+    user2_email = generate_unique_email()
+    register_data = {
+        "name": "Test User 2",
+        "email": user2_email,
+        "password": "testpass456"
+    }
     
-    if response.status_code != 401:
-        print_fail(f"Expected 401, got {response.status_code}")
-        print_info(f"Response: {response.text}")
-        return False
-    
-    print_pass("Malformed token correctly rejected with 401")
-    return True
+    try:
+        resp = requests.post(f"{BASE_URL}/auth/register", json=register_data, timeout=10)
+        if resp.status_code != 200:
+            log_test("B5: User isolation (register second user)", False, f"Status {resp.status_code}: {resp.text}")
+            return
+        
+        data = resp.json()
+        token2 = data.get("token")
+        
+        if not token2:
+            log_test("B5: User isolation (register second user)", False, "Missing token")
+            return
+        
+        # GET /api/workouts/sessions with second user's token
+        headers2 = {"Authorization": f"Bearer {token2}"}
+        resp = requests.get(f"{BASE_URL}/workouts/sessions", headers=headers2, timeout=10)
+        
+        if resp.status_code != 200:
+            log_test("B5: User isolation (second user sessions)", False, f"Status {resp.status_code}: {resp.text}")
+            return
+        
+        sessions = resp.json()
+        
+        if not isinstance(sessions, list):
+            log_test("B5: User isolation (second user sessions)", False, f"Expected list, got {type(sessions)}")
+            return
+        
+        if len(sessions) != 0:
+            log_test("B5: User isolation (second user sessions)", False, f"Expected empty list, got {len(sessions)} sessions (user isolation FAILED)")
+            return
+        
+        log_test("B5: User isolation (second user sessions)", True, "Second user sees empty list (isolation working)")
+        
+    except Exception as e:
+        log_test("B5: User isolation", False, f"Exception: {str(e)}")
 
-# ============================================================================
-# SANITY CHECKS: Existing endpoints
-# ============================================================================
-def test_root_endpoint():
-    print_info("Testing GET /api/")
+def test_session_security():
+    """B6) Test security - GET /workouts/sessions without token should return 401"""
+    print("\n=== B6) SESSION SECURITY ===")
     
-    response = requests.get(f"{BASE_URL}/")
-    print_info(f"Status Code: {response.status_code}")
-    
-    if response.status_code != 200:
-        print_fail(f"Expected 200, got {response.status_code}")
-        return False
-    
-    data = response.json()
-    if data.get("message") != "Hello World":
-        print_fail(f"Expected 'Hello World', got {data}")
-        return False
-    
-    print_pass("Root endpoint working")
-    return True
+    try:
+        resp = requests.get(f"{BASE_URL}/workouts/sessions", timeout=10)
+        
+        if resp.status_code != 401:
+            log_test("B6: Security (no token)", False, f"Expected 401, got {resp.status_code}")
+            return
+        
+        log_test("B6: Security (no token)", True, "Correctly rejected with 401")
+        
+    except Exception as e:
+        log_test("B6: Security (no token)", False, f"Exception: {str(e)}")
 
-def test_payments_config():
-    print_info("Testing GET /api/payments/config")
+def test_premium_checkout():
+    """C) PREMIUM AUTO-ACTIVATION - Test checkout creation"""
+    print("\n=== C) PREMIUM CHECKOUT ===")
     
-    response = requests.get(f"{BASE_URL}/payments/config")
-    print_info(f"Status Code: {response.status_code}")
-    
-    if response.status_code != 200:
-        print_fail(f"Expected 200, got {response.status_code}")
-        return False
-    
-    data = response.json()
-    if not data.get("configured"):
-        print_fail("Mercado Pago not configured")
-        return False
-    
-    print_pass("Payments config endpoint working")
-    return True
-
-def test_payments_checkout():
-    print_info("Testing POST /api/payments/checkout")
-    
+    # Create checkout for a new email
+    prem_email = generate_unique_email()
     checkout_data = {
-        "plan_id": "start",
+        "plan_id": "3d",
         "period": "mensal",
-        "email": "x@x.com",
+        "email": prem_email,
+        "name": "Prem Teste",
         "origin": "https://musclefit-hub.preview.emergentagent.com"
     }
     
-    response = requests.post(f"{BASE_URL}/payments/checkout", json=checkout_data)
-    print_info(f"Status Code: {response.status_code}")
-    
-    if response.status_code != 200:
-        print_fail(f"Expected 200, got {response.status_code}")
-        print_info(f"Response: {response.text}")
-        return False
-    
-    data = response.json()
-    if "preference_id" not in data or "checkout_url" not in data:
-        print_fail("Missing preference_id or checkout_url")
-        return False
-    
-    print_pass("Payments checkout endpoint working")
-    return True
+    try:
+        resp = requests.post(f"{BASE_URL}/payments/checkout", json=checkout_data, timeout=10)
+        
+        if resp.status_code != 200:
+            log_test("C7: POST /payments/checkout (premium)", False, f"Status {resp.status_code}: {resp.text}")
+            return
+        
+        data = resp.json()
+        preference_id = data.get("preference_id")
+        checkout_url = data.get("checkout_url")
+        external_reference = data.get("external_reference")
+        
+        if not preference_id:
+            log_test("C7: POST /payments/checkout (premium)", False, "Missing preference_id")
+            return
+        
+        if not checkout_url:
+            log_test("C7: POST /payments/checkout (premium)", False, "Missing checkout_url")
+            return
+        
+        if not external_reference:
+            log_test("C7: POST /payments/checkout (premium)", False, "Missing external_reference")
+            return
+        
+        log_test("C7: POST /payments/checkout (premium)", True, f"Checkout created. Preference: {preference_id}, External ref: {external_reference}")
+        print(f"  NOTE: Transaction created with status 'pending'. Premium activation on approval is implemented in webhook/_apply_payment but requires real approved payment to observe.")
+        
+    except Exception as e:
+        log_test("C7: POST /payments/checkout (premium)", False, f"Exception: {str(e)}")
 
-# ============================================================================
-# MAIN TEST RUNNER
-# ============================================================================
+def test_admin_endpoints():
+    """D) ADMIN - Test admin login and endpoints"""
+    print("\n=== D) ADMIN ENDPOINTS ===")
+    
+    # 8. Login as admin
+    login_data = {
+        "email": ADMIN_EMAIL,
+        "password": ADMIN_PASSWORD
+    }
+    
+    try:
+        resp = requests.post(f"{BASE_URL}/auth/login", json=login_data, timeout=10)
+        
+        if resp.status_code != 200:
+            log_test("D8: Admin login", False, f"Status {resp.status_code}: {resp.text}")
+            return None
+        
+        data = resp.json()
+        admin_token = data.get("token")
+        admin_user = data.get("user", {})
+        is_admin = admin_user.get("is_admin")
+        
+        if not admin_token:
+            log_test("D8: Admin login", False, "Missing token")
+            return None
+        
+        if not is_admin:
+            log_test("D8: Admin login", False, f"Expected is_admin=true, got {is_admin}")
+            return None
+        
+        log_test("D8: Admin login", True, f"Admin logged in. Email: {admin_user.get('email')}, is_admin: {is_admin}")
+        
+    except Exception as e:
+        log_test("D8: Admin login", False, f"Exception: {str(e)}")
+        return None
+    
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+    
+    # 9. GET /api/admin/stats
+    try:
+        resp = requests.get(f"{BASE_URL}/admin/stats", headers=admin_headers, timeout=10)
+        
+        if resp.status_code != 200:
+            log_test("D9: GET /admin/stats", False, f"Status {resp.status_code}: {resp.text}")
+        else:
+            data = resp.json()
+            required_keys = ["total_users", "premium_users", "free_users", "new_users_24h", 
+                           "total_sessions", "sessions_today", "active_subscriptions", 
+                           "revenue_total", "paid_transactions"]
+            
+            missing_keys = [k for k in required_keys if k not in data]
+            
+            if missing_keys:
+                log_test("D9: GET /admin/stats", False, f"Missing keys: {missing_keys}")
+            else:
+                # Verify all values are numeric
+                non_numeric = [k for k in required_keys if not isinstance(data[k], (int, float))]
+                
+                if non_numeric:
+                    log_test("D9: GET /admin/stats", False, f"Non-numeric values: {non_numeric}")
+                else:
+                    log_test("D9: GET /admin/stats", True, f"Stats: {data}")
+        
+    except Exception as e:
+        log_test("D9: GET /admin/stats", False, f"Exception: {str(e)}")
+    
+    # 10. GET /api/admin/users
+    try:
+        resp = requests.get(f"{BASE_URL}/admin/users", headers=admin_headers, timeout=10)
+        
+        if resp.status_code != 200:
+            log_test("D10: GET /admin/users", False, f"Status {resp.status_code}: {resp.text}")
+        else:
+            users = resp.json()
+            
+            if not isinstance(users, list):
+                log_test("D10: GET /admin/users", False, f"Expected list, got {type(users)}")
+            else:
+                # Verify user fields
+                if len(users) > 0:
+                    user = users[0]
+                    required_fields = ["id", "name", "email", "plan", "is_admin"]
+                    missing_fields = [f for f in required_fields if f not in user]
+                    
+                    if missing_fields:
+                        log_test("D10: GET /admin/users", False, f"Missing fields: {missing_fields}")
+                    else:
+                        log_test("D10: GET /admin/users", True, f"Found {len(users)} users")
+                else:
+                    log_test("D10: GET /admin/users", True, f"Found {len(users)} users (empty)")
+        
+    except Exception as e:
+        log_test("D10: GET /admin/users", False, f"Exception: {str(e)}")
+    
+    # 11. GET /api/admin/sessions
+    try:
+        resp = requests.get(f"{BASE_URL}/admin/sessions", headers=admin_headers, timeout=10)
+        
+        if resp.status_code != 200:
+            log_test("D11: GET /admin/sessions", False, f"Status {resp.status_code}: {resp.text}")
+        else:
+            sessions = resp.json()
+            
+            if not isinstance(sessions, list):
+                log_test("D11: GET /admin/sessions", False, f"Expected list, got {type(sessions)}")
+            else:
+                log_test("D11: GET /admin/sessions", True, f"Found {len(sessions)} sessions")
+        
+    except Exception as e:
+        log_test("D11: GET /admin/sessions", False, f"Exception: {str(e)}")
+    
+    return admin_token
+
+def test_admin_authorization(normal_user_token):
+    """D12) Test admin authorization - normal user should get 403, no token should get 401"""
+    print("\n=== D12) ADMIN AUTHORIZATION ===")
+    
+    # Test with normal user token (should get 403)
+    if normal_user_token:
+        headers = {"Authorization": f"Bearer {normal_user_token}"}
+        try:
+            resp = requests.get(f"{BASE_URL}/admin/stats", headers=headers, timeout=10)
+            
+            if resp.status_code != 403:
+                log_test("D12a: Admin auth (normal user)", False, f"Expected 403, got {resp.status_code}")
+            else:
+                log_test("D12a: Admin auth (normal user)", True, "Correctly rejected with 403")
+        
+        except Exception as e:
+            log_test("D12a: Admin auth (normal user)", False, f"Exception: {str(e)}")
+    else:
+        log_test("D12a: Admin auth (normal user)", False, "No normal user token available")
+    
+    # Test without token (should get 401)
+    try:
+        resp = requests.get(f"{BASE_URL}/admin/stats", timeout=10)
+        
+        if resp.status_code != 401:
+            log_test("D12b: Admin auth (no token)", False, f"Expected 401, got {resp.status_code}")
+        else:
+            log_test("D12b: Admin auth (no token)", True, "Correctly rejected with 401")
+    
+    except Exception as e:
+        log_test("D12b: Admin auth (no token)", False, f"Exception: {str(e)}")
+
+def print_summary():
+    """Print test summary"""
+    print("\n" + "="*60)
+    print("TEST SUMMARY")
+    print("="*60)
+    
+    passed = sum(1 for r in results if r["passed"])
+    failed = sum(1 for r in results if not r["passed"])
+    total = len(results)
+    
+    print(f"\nTotal: {total} tests")
+    print(f"Passed: {passed} ✅")
+    print(f"Failed: {failed} ❌")
+    
+    if failed > 0:
+        print("\nFailed tests:")
+        for r in results:
+            if not r["passed"]:
+                print(f"  ❌ {r['test']}")
+                if r["details"]:
+                    print(f"     {r['details']}")
+    
+    print("\n" + "="*60)
+    
+    return passed, failed, total
+
 if __name__ == "__main__":
-    print(f"\n{BLUE}{'='*80}{RESET}")
-    print(f"{BLUE}BACKEND AUTHENTICATION TESTING{RESET}")
-    print(f"{BLUE}Base URL: {BASE_URL}{RESET}")
-    print(f"{BLUE}Unique Email: {UNIQUE_EMAIL}{RESET}")
-    print(f"{BLUE}{'='*80}{RESET}")
+    print("="*60)
+    print("GLÚTEO PRIME BACKEND TEST SUITE")
+    print("="*60)
+    print(f"Base URL: {BASE_URL}")
+    print(f"Admin: {ADMIN_EMAIL}")
+    print("="*60)
     
-    # Run all authentication tests
-    run_test("1. POST /api/auth/register - Successful registration", test_register_success)
-    run_test("2. POST /api/auth/register - Duplicate email (409)", test_register_duplicate)
-    run_test("3. POST /api/auth/register - Invalid email (422)", test_register_invalid_email)
-    run_test("4. POST /api/auth/register - Short password (422)", test_register_short_password)
-    run_test("5. POST /api/auth/login - Successful login", test_login_success)
-    run_test("6. POST /api/auth/login - Wrong password (401)", test_login_wrong_password)
-    run_test("7. GET /api/auth/me - Without Authorization (401)", test_me_no_auth)
-    run_test("8. GET /api/auth/me - With valid Bearer token (200)", test_me_with_auth)
-    run_test("9. PUT /api/auth/profile - Update profile (200)", test_update_profile)
-    run_test("10. GET /api/auth/me - Verify profile persisted (200)", test_me_verify_profile)
-    run_test("11. GET /api/auth/me - Malformed token (401)", test_me_malformed_token)
-    
-    # Sanity checks for existing endpoints
-    print(f"\n{BLUE}{'='*80}{RESET}")
-    print(f"{BLUE}SANITY CHECKS: Existing Endpoints{RESET}")
-    print(f"{BLUE}{'='*80}{RESET}")
-    run_test("12. GET /api/ - Root endpoint", test_root_endpoint)
-    run_test("13. GET /api/payments/config", test_payments_config)
-    run_test("14. POST /api/payments/checkout", test_payments_checkout)
+    # Run all tests
+    user_token, user_email = test_profile_onboarding()
+    test_workout_sessions(user_token)
+    test_user_isolation()
+    test_session_security()
+    test_premium_checkout()
+    admin_token = test_admin_endpoints()
+    test_admin_authorization(user_token)
     
     # Print summary
-    print(f"\n{BLUE}{'='*80}{RESET}")
-    print(f"{BLUE}TEST SUMMARY{RESET}")
-    print(f"{BLUE}{'='*80}{RESET}")
-    
-    passed = sum(1 for r in test_results if r["passed"])
-    failed = sum(1 for r in test_results if not r["passed"])
-    total = len(test_results)
-    
-    for result in test_results:
-        status = f"{GREEN}✓ PASS{RESET}" if result["passed"] else f"{RED}✗ FAIL{RESET}"
-        print(f"{status}: {result['name']}")
-    
-    print(f"\n{BLUE}{'='*80}{RESET}")
-    print(f"{BLUE}Total: {total} | Passed: {GREEN}{passed}{RESET} | Failed: {RED}{failed}{RESET}{RESET}")
-    print(f"{BLUE}{'='*80}{RESET}\n")
+    passed, failed, total = print_summary()
     
     # Exit with appropriate code
     exit(0 if failed == 0 else 1)

@@ -21,6 +21,12 @@ JWT_SECRET = os.environ.get("JWT_SECRET", "dev-secret-change-me")
 JWT_ALG = "HS256"
 JWT_TTL = 60 * 60 * 24 * 30  # 30 days
 
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "").lower().strip()
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+ADMIN_EMAILS = {e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "").split(",") if e.strip()}
+if ADMIN_EMAIL:
+    ADMIN_EMAILS.add(ADMIN_EMAIL)
+
 pwd = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 bearer = HTTPBearer(auto_error=False)
 
@@ -87,6 +93,33 @@ async def current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)) ->
     return user
 
 
+async def require_admin(user: dict = Depends(current_user)) -> dict:
+    if not user.get("is_admin"):
+        raise HTTPException(403, "Acesso restrito a administradores")
+    return user
+
+
+async def ensure_admin():
+    """Seed an admin account on startup (idempotent)."""
+    if not ADMIN_EMAIL or not ADMIN_PASSWORD:
+        return
+    existing = await _users.find_one({"email": ADMIN_EMAIL})
+    if existing:
+        if not existing.get("is_admin"):
+            await _users.update_one({"id": existing["id"]}, {"$set": {"is_admin": True}})
+        return
+    await _users.insert_one({
+        "id": str(uuid.uuid4()),
+        "name": "Administrador",
+        "email": ADMIN_EMAIL,
+        "password_hash": pwd.hash(ADMIN_PASSWORD),
+        "plan": "premium",
+        "is_admin": True,
+        "profile": {"onboarding_done": True},
+        "created_at": time.time(),
+    })
+
+
 @router.post("/register")
 async def register(data: RegisterIn):
     email = data.email.lower().strip()
@@ -98,7 +131,7 @@ async def register(data: RegisterIn):
         "email": email,
         "password_hash": pwd.hash(data.password),
         "plan": "free",
-        "is_admin": False,
+        "is_admin": email in ADMIN_EMAILS,
         "profile": {"onboarding_done": False},
         "created_at": time.time(),
     }
